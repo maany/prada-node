@@ -1,4 +1,5 @@
 import { BrowserWindow } from 'electron';
+const path = require('path')
 
 export default class Main {
     static mainWindow: Electron.BrowserWindow;
@@ -16,10 +17,12 @@ export default class Main {
     }
 
     private static onReady() {
-        Main.mainWindow = new Main.BrowserWindow({ width: 800, height: 600 });
-        Main.mainWindow
-            .loadURL('file://' + __dirname + '/index.html');
+        Main.mainWindow = new Main.BrowserWindow({ width: 800, 
+            height: 600, 
+            webPreferences:  path.join(__dirname, 'preload.js')});
+        Main.mainWindow.loadFile('index.html');
         Main.mainWindow.on('closed', Main.onClose);
+        Main.mainWindow.webContents.openDevTools()
     }
 
     static main(app: Electron.App, browserWindow: typeof BrowserWindow) {
