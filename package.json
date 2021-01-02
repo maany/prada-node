@@ -2,9 +2,10 @@
   "name": "prada-node",
   "version": "1.0.0",
   "description": "The desktop/web visualizer and manager for prada nodes",
-  "main": "index.js",
+  "main": "dist/app.js",
   "scripts": {
-    "test": "test"
+    "test": "test",
+    "start": "tsc && electron dist/app.js"
   },
   "repository": {
     "type": "git",
