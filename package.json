@@ -5,7 +5,8 @@
   "main": "dist/app.js",
   "scripts": {
     "test": "test",
-    "build": "tsc && cp *.html dist/ && cp *.css dist/ && cp *.js dist/",
+    "clean": "rm -rf dist/*",
+    "build": "tsc && cp src/*.html dist/ && cp src/*.css dist/ && cp src/*.js dist/",
     "start": "electron dist/app.js"
   },
   "repository": {
