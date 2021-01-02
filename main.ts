@@ -19,7 +19,7 @@ export default class Main {
     private static onReady() {
         Main.mainWindow = new Main.BrowserWindow({ width: 800, 
             height: 600, 
-            webPreferences:  path.join(__dirname, 'preload.js')});
+            webPreferences:  {preload:path.join(__dirname, 'preload.js')}});
         Main.mainWindow.loadFile('index.html');
         Main.mainWindow.on('closed', Main.onClose);
         Main.mainWindow.webContents.openDevTools()
