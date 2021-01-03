@@ -1,9 +1,9 @@
 var gulp = require("gulp");
 var clean = require("gulp-clean")
-var print = require("gulp-print")
-var watchify = require("watchify");
-var fancy_log = require("fancy-log");
-var electron = require('electron-connect').server.create([stopOnClose=true]);
+var electron = require('electron-connect').server.create({
+    stopOnClose: true,
+    logLevel: 2    
+});
 var ts = require("gulp-typescript");
 const { WatchDirectoryFlags } = require("typescript");
 var tsProject = ts.createProject("tsconfig.json");
@@ -36,7 +36,6 @@ function compile_typescript(done){
     done()
 }
 
-
 function develop(done){
     // Start browser process
     electron.start("dist/app.js");
@@ -56,8 +55,19 @@ function develop(done){
         gulp.src(path, {read: false}).pipe(clean())
     }
     
+    const removeDistFile = function(path){
+        let destPath = getDestPath(path)
+        console.log(`Removing ${destPath}`)
+        removeFile(destPath)
+    }
+
+    const copySrcToDist = function(path){
+        let destDir = getDestDir(path)
+        console.log(`Copying File ${path} to ${destDir}`)
+        gulp.src(path).pipe(gulp.dest(destDir))
+    }
     // Watch ts files
-    const tsWatcher = gulp.watch([pathModule.join(paths.src, '**/*.ts'), pathModule.join(paths.src, '**/*.js')], )
+    const tsWatcher = gulp.watch([pathModule.join(paths.src, '**/*.ts')])
 
     const updateTypeScriptFile = (path, stats) => {
         let destPath = getDestDir(path)
@@ -89,15 +99,79 @@ function develop(done){
     })
 
     // Watch js files
+    const jsWatcher = gulp.watch([pathModule.join(paths.src, '**/*.js')])
+    // js Hot Reload Event Handlers
+    jsWatcher.on('change', (path, stats) => {
+        console.log(`File ${path} was changed`)
+        copySrcToDist(path)
+        console.log(`Restarting Electron process!`)
+        electron.restart("dist/app.js")
+    })
 
-    // Restart browser process
-    //gulp.watch(paths.src + 'main.ts', electron.restart());
+    jsWatcher.on('add', (path, stats) => {
+        console.log(`File ${path} was added`)
+        copySrcToDist(path)
+        console.log(`Restarting Electron process!`)
+        electron.restart("dist/app.js")
+    })
+    jsWatcher.on('unlink', (path, stats) => {
+        console.log(`File ${path} was deleted`)
+        removeDistFile(path)
+        console.log(`Restarting Electron process!`)
+        electron.restart("dist/app.js")
+    })
  
     // Reload renderer process
-    //gulp.watch([paths.src + 'renderer.js', paths.src + '*.html'], electron.reload);
+    const staticWatcher = gulp.watch([
+        paths.src + '**/*.css', 
+        paths.src + '**/*.html', 
+        paths.src + '**/*.jpg',
+    ]);
+    staticWatcher.on('change', (path, stats) => {
+        console.log(`File ${path} was changed`)
+        let destDir = getDestDir(path)
+        console.log(`Copying File ${path} to ${destDir}`)
+        gulp.src(path).pipe(gulp.dest(destDir))
+        console.log(`Reloading Electron process!`)
+        reload_renderer(done)
+    })
+
+    staticWatcher.on('add', (path, stats) => {
+        console.log(`File ${path} was added`)
+        let destDir = getDestDir(path)
+        console.log(`Copying File ${path} to ${destDir}`)
+        gulp.src(path).pipe(gulp.dest(destDir))
+        console.log(`Reloading Electron process!`)
+        reload_renderer(done)
+    })
+    staticWatcher.on('unlink', (path, stats) => {
+        console.log(`File ${path} was deleted`)
+        removeDistFile(path)
+        console.log(`Reloading Electron process!`)
+        reload_renderer(done)
+    })
     done()
 }
-
+var callback = function(electronProcState) {
+    console.log('electron process state: ' + electronProcState);
+    if (electronProcState == 'stopped') {
+      process.exit();
+    }
+  };
+  
+function restart_browser(done) {
+    electron.restart(callback);
+    done();
+}
+  
+function reload_renderer(done) {
+    // Reload renderer process
+    electron.reload(callback);
+    setTimeout(function () {
+      electron.broadcast('reload');
+      done();
+    })
+}
 exports.copy = copy_resources;
 exports.clean = clean_resources
 exports.build = gulp.parallel(copy_resources, compile_typescript)
