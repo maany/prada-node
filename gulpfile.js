@@ -1,11 +1,18 @@
 var gulp = require("gulp");
 var clean = require("gulp-clean")
+
+var browserify = require("browserify")
+var tsify = require("tsify")
+var source = require("vinyl-source-stream");
+
+//var babelify = require('babelify')
+var fs = require("fs")
+
 var electron = require('electron-connect').server.create({
     stopOnClose: true,
     logLevel: 2    
 });
 var ts = require("gulp-typescript");
-const { WatchDirectoryFlags } = require("typescript");
 var tsProject = ts.createProject("tsconfig.json");
 const pathModule = require('path')
 
@@ -36,6 +43,24 @@ function compile_typescript(done){
     done()
 }
 
+function copy_react_resources(done){
+    gulp.src("src/views/graph/**/*.html").pipe(gulp.dest('dist/views/graph'))
+    done()
+}
+function add_react_apps(done){
+    browserify({
+        basedir: "src/views/graph",
+        debug: true,
+        entries: ["main.ts"],
+        cache: {},
+        packageCache: {},
+    })
+    .plugin(tsify)
+    .bundle()
+    .pipe(source("bundle.js"))
+    .pipe(gulp.dest("dist/views/graph"))
+    done()
+}
 function develop(done){
     // Start browser process
     electron.start("dist/app.js");
@@ -176,3 +201,5 @@ exports.copy = copy_resources;
 exports.clean = clean_resources
 exports.build = gulp.parallel(copy_resources, compile_typescript)
 exports.develop = develop
+exports.react = gulp.series(copy_react_resources, add_react_apps)
+exports.default = gulp.series(exports.build, develop)
