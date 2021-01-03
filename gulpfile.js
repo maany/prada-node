@@ -40,23 +40,54 @@ function compile_typescript(done){
 function develop(done){
     // Start browser process
     electron.start("dist/app.js");
-    // Watch ts files
-    const tsWatcher = gulp.watch(paths.src + '**/*.ts')
-    tsWatcher.on('change', (path, stats) => {
-        console.log(`File ${path} was changed`)
+    
+    // Utils
+    const getDestDir = (path) => {
         let destPath = pathModule.join([paths.dist] + path.split(pathModule.sep).slice(1, -1))
+        return destPath
+    }
+
+    const getDestPath = (path) => {
+        let destPath = pathModule.join([paths.dist] + path.split(pathModule.sep).slice(1))
+        return destPath
+    }
+
+    const removeFile = function(path) {
+        gulp.src(path, {read: false}).pipe(clean())
+    }
+    
+    // Watch ts files
+    const tsWatcher = gulp.watch([pathModule.join(paths.src, '**/*.ts'), pathModule.join(paths.src, '**/*.js')], )
+
+    const updateTypeScriptFile = (path, stats) => {
+        let destPath = getDestDir(path)
         console.log(`The compiled output will be placed at ${destPath}`)
         gulp.src(path).pipe(ts()).pipe(gulp.dest(destPath))
         console.log(`Typescript compilation completed!`)
+    }
+
+    
+    // ts Hot Reload Event Handlers
+    tsWatcher.on('change', (path, stats) => {
+        console.log(`File ${path} was changed`)
+        updateTypeScriptFile(path, stats)
         console.log(`Restarting Electron process!`)
         electron.restart("dist/app.js")
     })
     tsWatcher.on('add', (path, stats) => {
         console.log(`File ${path} was added`)
+        updateTypeScriptFile(path, stats)
+        console.log(`Restarting Electron process!`)
+        electron.restart("dist/app.js")
     })
     tsWatcher.on('unlink', (path, stats) => {
         console.log(`File ${path} was deleted`)
+        let destPath = getDestPath(path)
+        let finalDestPath = pathModule.join(pathModule.dirname(destPath), pathModule.basename(destPath, pathModule.extname(destPath)) + ".js")
+        console.log(`Removing ${finalDestPath}`)
+        removeFile(finalDestPath)
     })
+
     // Watch js files
 
     // Restart browser process
