@@ -7,7 +7,7 @@ var electron = require('electron-connect').server.create([stopOnClose=true]);
 var ts = require("gulp-typescript");
 const { WatchDirectoryFlags } = require("typescript");
 var tsProject = ts.createProject("tsconfig.json");
-
+const pathModule = require('path')
 
 var paths = {
     pages: "./src/*.html",
@@ -44,7 +44,12 @@ function develop(done){
     const tsWatcher = gulp.watch(paths.src + '**/*.ts')
     tsWatcher.on('change', (path, stats) => {
         console.log(`File ${path} was changed`)
-        
+        let destPath = pathModule.join([paths.dist] + path.split(pathModule.sep).slice(1, -1))
+        console.log(`The compiled output will be placed at ${destPath}`)
+        gulp.src(path).pipe(ts()).pipe(gulp.dest(destPath))
+        console.log(`Typescript compilation completed!`)
+        console.log(`Restarting Electron process!`)
+        electron.restart("dist/app.js")
     })
     tsWatcher.on('add', (path, stats) => {
         console.log(`File ${path} was added`)
