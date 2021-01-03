@@ -8,3 +8,11 @@ npm run-script clean
 npm run-script build
 npm start
 ```
+
+or 
+
+```
+gulp clean
+gulp build
+gulp develop
+```
