@@ -1,5 +1,6 @@
 import { BrowserWindow } from 'electron';
 const path = require('path')
+const client = require('electron-connect').client;
 
 export default class Main {
     static mainWindow: Electron.BrowserWindow;
@@ -18,11 +19,14 @@ export default class Main {
 
     private static onReady() {
         Main.mainWindow = new Main.BrowserWindow({ width: 800, 
-            height: 600, 
+            height: 600,
             webPreferences:  {preload:path.join(__dirname, 'preload.js')}});
-        Main.mainWindow.loadFile('pages/index.html');
+        Main.mainWindow.loadFile('index.html');
         Main.mainWindow.on('closed', Main.onClose);
         Main.mainWindow.webContents.openDevTools()
+        
+        // Connect to hotreload watch server
+        client.create(Main.mainWindow)
     }
 
     static main(app: Electron.App, browserWindow: typeof BrowserWindow) {
